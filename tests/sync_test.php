@@ -90,10 +90,9 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         }
 
         // Add one empty group.
-        $o = array(
-            'objectClass' => array('groupOfNames'),
-            'cn' => 'philosophy'
-        );
+        $o = array();
+        $o['objectClass'] = array('groupOfNames');
+        $o['cn'] = 'philosophy';
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
         // Configure the authentication plugin a bit.
