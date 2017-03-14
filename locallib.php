@@ -196,7 +196,7 @@ class local_ldap extends auth_plugin_ldap {
             return $ret;
         }
 
-        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ") . $this->get_group_class_filter() . )";
+        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ")" . $this->get_group_class_filter() . ")";
 
         if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
             $contexts = explode(';', $CFG->cohort_synching_ldap_groups_contexts);
@@ -288,7 +288,7 @@ class local_ldap extends auth_plugin_ldap {
 
         $group = core_text::convert($group, 'utf-8', $this->config->ldapencoding);
 
-        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ") . $this->get_group_class_filter() . )";
+        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ")" . $this->get_group_class_filter() . ")";
 
         $size = 999;
 
