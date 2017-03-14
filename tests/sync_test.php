@@ -70,7 +70,7 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $o['objectClass'] = array('organizationalUnit');
         $o['ou']          = 'users';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 7; $i++) {
             $this->create_ldap_user($connection, $topdn, $i);
         }
 
@@ -86,6 +86,20 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
             $o['cn']          = $department;
             $o['member']      = array('cn=username1,ou=users,'.$topdn, 'cn=username2,ou=users,'.$topdn,
                     'cn=username5,ou=users,'.$topdn);
+            ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
+        }
+
+        // Create some other groups with a different group class.
+        $o = array();
+        $o['objectClass'] = array('organizationalUnit');
+        $o['ou']          = 'groups';
+        ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
+        $departments = array('sociology', 'physics');
+        foreach ($departments as $department) {
+            $o = array();
+            $o['objectClass'] = array('groupOfUniqueNames');
+            $o['cn']          = $department;
+            $o['member']      = array('cn=username7,ou=users,'.$topdn, 'cn=username8,ou=users,'.$topdn);
             ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
         }
 
@@ -130,8 +144,8 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 5 users created.
-        $this->assertCount(5, $events);
+        // Check events, 8 users created.
+        $this->assertCount(8, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
@@ -144,14 +158,40 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $cohort->name = "English Department";
         $cohort->idnumber = 'english';
         $englishid = cohort_add_cohort($cohort);
+        $cohort = new stdClass();
+        $cohort->contextid = context_system::instance()->id;
+        $cohort->name = "Sociology Department";
+        $cohort->idnumber = 'sociology';
+        $sociologyid = cohort_add_cohort($cohort);
+        $cohort = new stdClass();
+        $cohort->contextid = context_system::instance()->id;
+        $cohort->name = "Physics Department";
+        $cohort->idnumber = 'physics';
+        $physicsid = cohort_add_cohort($cohort);
 
-        // Both cohorts should have three members.
+        // English and History should have three members. Sociology and Physics shoudl be ignored.
         $plugin = new local_ldap();
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
         $this->assertEquals(3, $members);
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(3, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $sociologyid));
+        $this->assertEquals(0, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $physicsid));
+        $this->assertEquals(0, $members);
+
+        // Add groupOfUniqueNames as a group class.
+        set_config('group_class', 'groupOfNames; groupOfUniqueNames', 'local_ldap');
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
+        $this->assertEquals(3, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
+        $this->assertEquals(3, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $sociologyid));
+        $this->assertEquals(1, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $physicsid));
+        $this->assertEquals(1, $members);
 
         // Remove a user and then ensure he's re-added.
         $members = $plugin->get_cohort_members($englishid);

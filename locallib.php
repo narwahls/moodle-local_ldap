@@ -101,7 +101,7 @@ class local_ldap extends auth_plugin_ldap {
         } else {
             $filter = '(&';
             foreach ($groupclass as $class) {
-                $filter .= "(objectclass={$class})";
+                $filter .= "(objectclass=".trim($class).")";
             }
             $filter .= ')';
             return $filter;
