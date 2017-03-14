@@ -91,6 +91,24 @@ class local_ldap extends auth_plugin_ldap {
     }
 
     /**
+     * Build the group class filter; we support multiple classes.
+     * @return string
+     */
+    private function get_group_class_filter() {
+        $groupclass = explode(";", $this->config->group_class);
+        if (count($groupclass) == 1) {
+            return "(objectclass={$groupclass[0]})";
+        } else {
+            $filter = '(&';
+            foreach ($groupclass as $class) {
+                $filter. = "(objectclass={$class})";
+            }
+            $filter .= ')';
+            return $filter;
+        }
+    }
+
+    /**
      *
      * merge configuration setting
      * @param unknown_type $from
@@ -114,10 +132,10 @@ class local_ldap extends auth_plugin_ldap {
 
         $ldapconnection = $this->ldap_connect();
 
-        $fresult = array ();
+        $fresult = array();
 
         if ($filter == "*") {
-            $filter = "(&(" . $this->config->group_attribute . "=*)(objectclass=" . $this->config->group_class . "))";
+            $filter = "(&(" . $this->config->group_attribute . "=*)" . $this->get_group_class_filter() . ")";
         }
 
         if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
@@ -178,7 +196,7 @@ class local_ldap extends auth_plugin_ldap {
             return $ret;
         }
 
-        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ")(objectClass={$this->config->group_class}))";
+        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ") . $this->get_group_class_filter() . )";
 
         if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
             $contexts = explode(';', $CFG->cohort_synching_ldap_groups_contexts);
@@ -270,7 +288,7 @@ class local_ldap extends auth_plugin_ldap {
 
         $group = core_text::convert($group, 'utf-8', $this->config->ldapencoding);
 
-        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ")(objectClass={$this->config->group_class}))";
+        $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ") . $this->get_group_class_filter() . )";
 
         $size = 999;
 
