@@ -152,7 +152,6 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $this->assertEquals(3, $members);
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(3, $members);
-        $this->assertEquals(0, $members);
 
         // Add groupOfUniqueNames as a group class.
         set_config('group_class', 'groupOfNames; groupOfUniqueNames', 'local_ldap');
