@@ -90,10 +90,6 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         }
 
         // Create some other groups with a different group class.
-        $o = array();
-        $o['objectClass'] = array('organizationalUnit');
-        $o['ou']          = 'groups';
-        ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
         $departments = array('sociology', 'physics');
         foreach ($departments as $department) {
             $o = array();
