@@ -130,8 +130,8 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 8 users created.
-        $this->assertCount(8, $events);
+        // Check events, 7 users created.
+        $this->assertCount(7, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
