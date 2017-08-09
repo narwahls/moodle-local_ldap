@@ -1,4 +1,4 @@
-LDAP synching scripts
+LDAP syncing scripts
 =====================
 
 [![Build Status](https://api.travis-ci.org/mackensen/moodle_local_ldap.png)](https://api.travis-ci.org/mackensen/moodle_local_ldap)
@@ -7,10 +7,9 @@ This plugin synchronizes Moodle cohorts against an LDAP directory using either g
 
 Requirements
 ------------
-- Moodle 2.9 (build 2015051100 or later)
+- Moodle 3.2.4 (build 2016120504 or later)
 
-Various synchronization scripts between Moodle cohorts and LDAP directories (see  
-and  )
+Various synchronization scripts between Moodle cohorts and LDAP directories.
 
 Installation
 ------------

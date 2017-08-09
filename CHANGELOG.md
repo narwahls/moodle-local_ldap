@@ -1,7 +1,11 @@
-CHANGELOG
-=========
+# Changelog
 
-v2.0.0
+## 3.2.0 - 2017-08-09
+
+- Changed version numbering to match stable version
+- Bugfix for [MDL-57558](https://tracker.moodle.org/browse/MDL-57558): attribute sync was broken by Moodle 3.2.4
+
+## 2.0.0 - 2016-07-15
 
 - Official support for Moodle 2.9-Moodle 3.1
 - Migrated CLI script to scheduled task
