@@ -45,7 +45,7 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
             $this->markTestSkipped('External LDAP test server not configured.');
         }
 
-        // Make sure we can connect the server.
+        // Make sure we can connect to the server.
         $debuginfo = '';
         if (!$connection = ldap_connect_moodle(TEST_AUTH_LDAP_HOST_URL, 3, 'rfc2307', TEST_AUTH_LDAP_BIND_DN,
                 TEST_AUTH_LDAP_BIND_PW, LDAP_DEREF_NEVER, $debuginfo, false)) {
@@ -179,6 +179,15 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(2, $members);
+
+        // Add a nested group; should be a no-op.
+        ldap_mod_add($connection, "cn=history,ou=groups,$topdn",
+            array($auth->config->memberattribute => "cn=english,ou=groups,$topdn"));
+        $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
+        $this->assertEquals(4, $members);
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
+        $this->assertEquals(4, $members);
 
         // Cleanup.
         $this->recursive_delete($connection, TEST_AUTH_LDAP_DOMAIN, 'dc=moodletest');
