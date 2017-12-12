@@ -70,7 +70,7 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $o['objectClass'] = array('organizationalUnit');
         $o['ou']          = 'users';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 6; $i++) {
             $this->create_ldap_user($connection, $topdn, $i);
         }
 
@@ -130,8 +130,8 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 5 users created.
-        $this->assertCount(5, $events);
+        // Check events, 6 users created.
+        $this->assertCount(6, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
@@ -188,6 +188,20 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
         $this->assertEquals(4, $members);
+
+        // Add nested group inside users.
+        $o = array();
+        $o['objectClass'] = array('groupOfNames');
+        $o['cn']          = 'creativewriting';
+        $o['member']      = array('cn=username6,ou=users,'.$topdn);
+        ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
+        ldap_mod_add($connection, "cn=english,ou=groups,$topdn",
+            array($auth->config->memberattribute => "cn=creativewriting,ou=users,$topdn"));
+        $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
+        $this->assertEquals(2, $members);
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
+        $this->assertEquals(3, $members);
 
         // Cleanup.
         $this->recursive_delete($connection, TEST_AUTH_LDAP_DOMAIN, 'dc=moodletest');
