@@ -70,7 +70,7 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $o['objectClass'] = array('organizationalUnit');
         $o['ou']          = 'users';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
-        for ($i = 1; $i <= 5000; $i++) {
+        for ($i = 1; $i <= 10000; $i++) {
             $this->create_ldap_user($connection, $topdn, $i);
         }
 
@@ -94,7 +94,7 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $o['objectClass'] = array('groupOfNames');
         $o['cn']          = 'allemployees';
         $o['member']      = array();
-        for ($i = 1; $i <= 5000; $i++) {
+        for ($i = 1; $i <= 10000; $i++) {
             $o['member'][] = "cn=username{$i},ou=users,{$topdn}";
         }
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
@@ -140,8 +140,8 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 5000 users created.
-        $this->assertCount(5000, $events);
+        // Check events, 10000 users created.
+        $this->assertCount(10000, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
@@ -197,10 +197,10 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $cohort->idnumber = 'allemployees';
         $allemployeesid = cohort_add_cohort($cohort);
 
-        // The big cohort should have 5000 members.
+        // The big cohort should have 10000 members.
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $allemployeesid));
-        $this->assertEquals(5000, $members);
+        $this->assertEquals(10000, $members);
 
         // Cleanup.
         $this->recursive_delete($connection, TEST_AUTH_LDAP_DOMAIN, 'dc=moodletest');
