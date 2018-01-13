@@ -65,12 +65,12 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
             $this->markTestSkipped('Can not create test LDAP container.');
         }
 
-        // Create a few users.
+        // Create many users.
         $o = array();
         $o['objectClass'] = array('organizationalUnit');
         $o['ou']          = 'users';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 5000; $i++) {
             $this->create_ldap_user($connection, $topdn, $i);
         }
 
@@ -88,6 +88,16 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
                     'cn=username5,ou=users,'.$topdn);
             ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
         }
+
+        // Create all employees group.
+        $o = array();
+        $o['objectClass'] = array('groupOfNames');
+        $o['cn']          = 'allemployees';
+        $o['member']      = array();
+        for ($i = 1; $i <= 5000; $i++) {
+            $o['member'][] = "cn=username{$i},ou=users,{$topdn}";
+        }
+        ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
         // Configure the authentication plugin a bit.
         set_config('host_url', TEST_AUTH_LDAP_HOST_URL, 'auth_ldap');
@@ -130,8 +140,8 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 5 users created.
-        $this->assertCount(5, $events);
+        // Check events, 5000 users created.
+        $this->assertCount(5000, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
@@ -179,6 +189,18 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(2, $members);
+
+        // Add the big cohort.
+        $cohort = new stdClass();
+        $cohort->contextid = context_system::instance()->id;
+        $cohort->name = "All employees";
+        $cohort->idnumber = 'allemployees';
+        $allemployeesid = cohort_add_cohort($cohort);
+
+        // The big cohort should have 5000 members.
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $allemployeesid));
+        $this->assertEquals(5000, $members);
 
         // Cleanup.
         $this->recursive_delete($connection, TEST_AUTH_LDAP_DOMAIN, 'dc=moodletest');
