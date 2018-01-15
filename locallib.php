@@ -163,7 +163,7 @@ class local_ldap extends auth_plugin_ldap {
 
     /**
      * Search for group members on a openLDAP directory.
-     * return string[] array of usernames
+     * return string[] array of usernames or boolean on failure.
      */
 
     private function ldap_get_group_members_rfc($group) {
@@ -175,7 +175,7 @@ class local_ldap extends auth_plugin_ldap {
         $group = core_text::convert($group, 'utf-8', $this->config->ldapencoding);
 
         if (!$ldapconnection) {
-            return $ret;
+            return false;
         }
 
         $queryg = "(&({$this->config->group_attribute}=" . trim($group) . ")(objectClass={$this->config->group_class}))";
@@ -196,7 +196,11 @@ class local_ldap extends auth_plugin_ldap {
                 continue;
             }
 
+            // Get results; bail out on failure.
             $resultg = ldap_search($ldapconnection, $context, $queryg);
+            if (!$resultg) {
+                return false;
+            }
 
             if (!empty ($resultg) AND ldap_count_entries($ldapconnection, $resultg)) {
                 $groupe = ldap_get_entries($ldapconnection, $resultg);
@@ -234,6 +238,9 @@ class local_ldap extends auth_plugin_ldap {
                                         }
                                         $this->antirecursionarray[$memberstring] = 1;
                                         $tmp = $this->ldap_get_group_members_rfc($groupcn);
+                                        if (!$tmp) {
+                                            return false;
+                                        }
                                         unset($this->antirecursionarray[$memberstring]);
                                         $ret = array_merge($ret, $tmp);
                                     } else {
@@ -257,6 +264,7 @@ class local_ldap extends auth_plugin_ldap {
     /**
      * specific serach for active Directory  problems if more than 999 members
      * recherche paginée voir http://forums.sun.com/thread.jspa?threadID=578347
+     * return string[] array of usernames or boolean on failure.
      */
 
     private function ldap_get_group_members_ad($group) {
@@ -265,7 +273,7 @@ class local_ldap extends auth_plugin_ldap {
         $ret = array ();
         $ldapconnection = $this->ldap_connect();
         if (!$ldapconnection) {
-            return $ret;
+            return false;
         }
 
         $group = core_text::convert($group, 'utf-8', $this->config->ldapencoding);
@@ -295,10 +303,14 @@ class local_ldap extends auth_plugin_ldap {
 
             while (!$fini) {
                 // Recherche paginée par paquet de 1000. TODO: Translate.
+                // Get results; bail out on failure.
                 $attribut = $this->config->memberattribute . ";range=" . $start . '-' . $end;
                 $resultg = ldap_search($ldapconnection, $context, $queryg, array (
                 $attribut
                 ));
+                if (!$resultg) {
+                    return false;
+                }
 
                 if (!empty ($resultg) AND ldap_count_entries($ldapconnection, $resultg)) {
                     $groupe = ldap_get_entries($ldapconnection, $resultg);
@@ -323,6 +335,9 @@ class local_ldap extends auth_plugin_ldap {
 
                                 $this->antirecursionarray[$memberstring] = 1;
                                 $tmp = $this->ldap_get_group_members_ad($groupcn);
+                                if (!$tmp) {
+                                    return false;
+                                }
                                 unset($this->antirecursionarray[$memberstring]);
                                 $ret = array_merge($ret, $tmp);
                             } else {
@@ -415,7 +430,7 @@ class local_ldap extends auth_plugin_ldap {
      * rev 1012 traitement de l'execption avec active directory pour des groupes >1000 members
      * voir http://forums.sun.com/thread.jspa?threadID=578347
      *
-     * @return string[] an array of username indexed by Moodle's userid
+     * @return string[] an array of username indexed by Moodle's userid or boolean on failure
      */
     public function ldap_get_group_members($groupe) {
         global $DB;
@@ -426,16 +441,20 @@ class local_ldap extends auth_plugin_ldap {
             $members = $this->ldap_get_group_members_rfc($groupe);
         }
         $ret = array();
-        // Remove all LDAP users unknown to Moodle.
-        foreach ($members as $member) {
-            $params = array (
-                'username' => $member
-            );
-            if ($user = $DB->get_record('user', $params, 'id,username')) {
-                $ret[$user->id] = $user->username;
+        // Remove all LDAP users unknown to Moodle; skip if $members is false.
+        if (is_array($members)) {
+            foreach ($members as $member) {
+                $params = array (
+                    'username' => $member
+                );
+                if ($user = $DB->get_record('user', $params, 'id,username')) {
+                    $ret[$user->id] = $user->username;
+                }
             }
+            return $ret;
+        } else {
+            return false;
         }
-        return $ret;
     }
 
 
@@ -616,7 +635,7 @@ class local_ldap extends auth_plugin_ldap {
                     continue;
                 }
                 $ldapmembers = $this->ldap_get_group_members($groupname);
-                if (count($ldapmembers) == 0) {
+                if (!$ldapmembers || count($ldapmembers) == 0) {
                     // Do not create an empty cohort.
                     continue;
                 }
@@ -634,16 +653,20 @@ class local_ldap extends auth_plugin_ldap {
             $cohortmembers = $this->get_cohort_members($cohortid);
 
             // Remove local Moodle users not present in LDAP.
-            foreach ($cohortmembers as $userid => $user) {
-                if (!isset($ldapmembers[$userid])) {
-                    cohort_remove_member($cohortid, $userid);
+            if (is_array($ldapmembers)) {
+                foreach ($cohortmembers as $userid => $user) {
+                    if (!isset($ldapmembers[$userid])) {
+                        cohort_remove_member($cohortid, $userid);
+                    }
                 }
             }
 
             // Add LDAP users not present in the local cohort.
-            foreach ($ldapmembers as $userid => $username) {
-                if (!cohort_is_member($cohortid, $userid)) {
-                    cohort_add_member($cohortid, $userid);
+            if (is_array($ldapmembers)) {
+                foreach ($ldapmembers as $userid => $username) {
+                    if (!cohort_is_member($cohortid, $userid)) {
+                        cohort_add_member($cohortid, $userid);
+                    }
                 }
             }
         }
