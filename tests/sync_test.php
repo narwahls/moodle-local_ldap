@@ -327,10 +327,10 @@ class local_ldap_sync_testcase extends auth_ldap_plugin_testcase {
         $members = $plugin->get_cohort_members($staffid);
         cohort_remove_member($staffid, current($members)->id);
         $members = $DB->count_records('cohort_members', array('cohortid' => $staffid));
-        $this->assertEquals(2, $members);
+        $this->assertEquals(1, $members);
         $plugin->sync_cohorts_by_attribute();
         $members = $DB->count_records('cohort_members', array('cohortid' => $staffid));
-        $this->assertEquals(3, $members);
+        $this->assertEquals(2, $members);
 
         // Add an affiliation in LDAP and ensure he'd added.
         ldap_mod_add($connection, "cn=username3,ou=users,$topdn",
