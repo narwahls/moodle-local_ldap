@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.1 - 2018-05-04
+
+- Updated for GDPR compliance
+- Fixed bug where parentheses were not filtered correctly (thanks to [@cperves](https://github.com/cperves) for the report)
+
 ## 3.2.0 - 2017-08-09
 
 - Changed version numbering to match stable version
@@ -10,5 +15,3 @@
 - Official support for Moodle 2.9-Moodle 3.1
 - Migrated CLI script to scheduled task
 - Unit test coverage for OpenLDAP
-
-
