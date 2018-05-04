@@ -1,15 +1,14 @@
 LDAP syncing scripts
 =====================
 
-[![Build Status](https://api.travis-ci.org/LafColITS/moodle-local_ldap.png)](https://api.travis-ci.org/LafColITS/moodle-local_ldap)
+[![Build Status](https://travis-ci.org/LafColITS/moodle-local_ldap.svg?branch=MOODLE_33_STABLE)](https://travis-ci.org/LafColITS/moodle-local_ldap)
 
 This plugin synchronizes Moodle cohorts against an LDAP directory using either group memberships or attribute values. This is a continuation of Patrick Pollet's [local_ldap](https://github.com/patrickpollet/moodle_local_ldap) plugin, which in turn was inspired by [MDL-25011](https://tracker.moodle.org/browse/MDL-25011) and [MDL-25054](https://tracker.moodle.org/browse/MDL-25054).
 
 Requirements
 ------------
 - Moodle 3.3.1 (build 2017051501 or later)
-
-Various synchronization scripts between Moodle cohorts and LDAP directories.
+- OpenLDAP or Active Directory
 
 Installation
 ------------
@@ -21,7 +20,7 @@ Depending on your environment the plugin may work with default options. Configur
 
 Usage
 -----
-Previous versions of this plugin used a CLI script. This is deprecated in favor of two [Scheduled tasks](https://docs.moodle.org/31/en/Scheduled_tasks), one for syncing by group and another for syncing by attribute. Both are configured to run hourly and are disabled by default.
+Previous versions of this plugin used a CLI script. This is deprecated in favor of two [scheduled tasks](https://docs.moodle.org/31/en/Scheduled_tasks), one for syncing by group and another for syncing by attribute. Both are configured to run hourly and are disabled by default.
 
 Author
 -----
