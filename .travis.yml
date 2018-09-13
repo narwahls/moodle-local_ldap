@@ -1,6 +1,6 @@
 language: php
 
-sudo: false
+sudo: true
 
 cache:
   directories:
@@ -12,7 +12,7 @@ php:
  - 7.1
 
 addons:
-  postgresql: "10.5"
+  postgresql: "10"
   firefox: "47.0.1"
   apt:
     packages:
@@ -20,6 +20,8 @@ addons:
       - oracle-java8-installer
       - oracle-java8-set-default
       - slapd
+      - postgresql-10
+      - postgresql-client-10
 
 env:
   global:
@@ -54,6 +56,11 @@ before_script:
   - slapd -f moodle/local/ldap/tests/fixtures/slapd.conf -h ldap://localhost:3389 &
   - sleep 3
   - ldapadd -H ldap://127.0.0.1:3389 -D "cn=admin,dc=example,dc=com" -w password -f moodle/local/ldap/tests/fixtures/bootstrap.ldif
+    # Use default port
+    - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+    # Use 9.6 auth config:
+    - sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+    - sudo service postgresql restart
 
 script:
   - moodle-plugin-ci phplint
