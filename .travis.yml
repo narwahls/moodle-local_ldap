@@ -56,11 +56,11 @@ before_script:
   - slapd -f moodle/local/ldap/tests/fixtures/slapd.conf -h ldap://localhost:3389 &
   - sleep 3
   - ldapadd -H ldap://127.0.0.1:3389 -D "cn=admin,dc=example,dc=com" -w password -f moodle/local/ldap/tests/fixtures/bootstrap.ldif
-    # Use default port
-    - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
-    # Use 9.6 auth config:
-    - sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
-    - sudo service postgresql restart
+  # Use default port
+  - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+  # Use 9.6 auth config:
+  - sudo cp /etc/postgresql/{9.6,10}/main/pg_hba.conf
+  - sudo service postgresql restart
 
 script:
   - moodle-plugin-ci phplint
@@ -72,3 +72,4 @@ script:
   - moodle-plugin-ci mustache
   - moodle-plugin-ci grunt
   - moodle-plugin-ci phpunit
+  - moodle-plugin-ci behat
