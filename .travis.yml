@@ -18,8 +18,7 @@ addons:
   apt:
     packages:
       - ldap-utils
-      - oracle-java8-installer
-      - oracle-java8-set-default
+      - openjdk-8-jre-headless
       - slapd
 
 env:
