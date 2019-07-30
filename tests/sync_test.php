@@ -114,7 +114,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
             $o = array();
             $o['objectClass'] = array('groupOfNames');
             $o['cn']          = "emptygroup{$i}";
-            $o['member']      = array("cn=username{$u},ou=students,".$topdn);
+            $o['member']      = array("cn=student{$u},ou=students,".$topdn);
             ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
         }
 
@@ -134,7 +134,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $o['cn']          = 'allstudents';
         $o['member']      = array();
         for ($i = 1; $i <= 2000; $i++) {
-            $o['member'][] = "cn=username{$i},ou=students,{$topdn}";
+            $o['member'][] = "cn=student{$i},ou=students,{$topdn}";
         }
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
