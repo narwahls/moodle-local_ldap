@@ -75,13 +75,22 @@ class local_ldap_sync_testcase extends advanced_testcase {
             $this->markTestSkipped('Can not create test LDAP container.');
         }
 
-        // Create 2000 users.
+        // Create 2000 students.
         $o = array();
         $o['objectClass'] = array('organizationalUnit');
-        $o['ou']          = 'users';
+        $o['ou']          = 'students';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
         for ($i = 1; $i <= 2000; $i++) {
-            $this->create_ldap_user($connection, $topdn, $i);
+            $this->create_ldap_user($connection, $o['ou'], $topdn, $i);
+        }
+
+        // Create 200 faculty.
+        $o = array();
+        $o['objectClass'] = array('organizationalUnit');
+        $o['ou']          = 'faculty';
+        ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
+        for ($i = 1; $i <= 200; $i++) {
+            $this->create_ldap_user($connection, $o['ou'], $topdn, $i);
         }
 
         // Create department groups.
@@ -94,8 +103,8 @@ class local_ldap_sync_testcase extends advanced_testcase {
             $o = array();
             $o['objectClass'] = array('groupOfNames');
             $o['cn']          = $department;
-            $o['member']      = array('cn=username1,ou=users,'.$topdn, 'cn=username2,ou=users,'.$topdn,
-                    'cn=username5,ou=users,'.$topdn);
+            $o['member']      = array('cn=username1,ou=faculty,'.$topdn, 'cn=username2,ou=faculty,'.$topdn,
+                    'cn=username5,ou=faculty,'.$topdn);
             ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
         }
 
@@ -105,17 +114,27 @@ class local_ldap_sync_testcase extends advanced_testcase {
             $o = array();
             $o['objectClass'] = array('groupOfNames');
             $o['cn']          = "emptygroup{$i}";
-            $o['member']      = array("cn=username{$u},ou=users,".$topdn);
+            $o['member']      = array("cn=username{$u},ou=students,".$topdn);
             ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
         }
 
-        // Create all employees group.
+        // Create all faculty group.
         $o = array();
         $o['objectClass'] = array('groupOfNames');
-        $o['cn']          = 'allemployees';
+        $o['cn']          = 'allfaculty';
+        $o['member']      = array();
+        for ($i = 1; $i <= 200; $i++) {
+            $o['member'][] = "cn=username{$i},ou=faculty,{$topdn}";
+        }
+        ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
+
+        // Create all students group.
+        $o = array();
+        $o['objectClass'] = array('groupOfNames');
+        $o['cn']          = 'allstudents';
         $o['member']      = array();
         for ($i = 1; $i <= 2000; $i++) {
-            $o['member'][] = "cn=username{$i},ou=users,{$topdn}";
+            $o['member'][] = "cn=username{$i},ou=students,{$topdn}";
         }
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
@@ -128,7 +147,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
         set_config('bind_dn', TEST_AUTH_LDAP_BIND_DN, 'auth_ldap');
         set_config('bind_pw', TEST_AUTH_LDAP_BIND_PW, 'auth_ldap');
         set_config('user_type', TEST_AUTH_LDAP_USER_TYPE, 'auth_ldap');
-        set_config('contexts', 'ou=users,'.$topdn.';ou=groups,'.$topdn, 'auth_ldap');
+        set_config('contexts', 'ou=faculty,'.$topdn.';ou=students,'.$topdn.';ou=groups,'.$topdn, 'auth_ldap');
         set_config('search_sub', 0, 'auth_ldap');
         set_config('opt_deref', LDAP_DEREF_NEVER, 'auth_ldap');
         set_config('user_attribute', 'cn', 'auth_ldap');
@@ -151,7 +170,8 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $this->assertEquals(2, $DB->count_records('user'));
 
         // Configure the local plugin.
-        set_config('group_contexts', implode(";", array('ou=groups,'.$topdn, 'ou=users,'.$topdn)));
+        // No students in the group sync by default.
+        set_config('group_contexts', implode(";", array('ou=groups,'.$topdn, 'ou=faculty,'.$topdn)));
 
         // Sync the users.
         $auth = get_auth_plugin('ldap');
@@ -163,8 +183,8 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $sink->close();
         ob_end_clean();
 
-        // Check events, 2000 users created.
-        $this->assertCount(2000, $events);
+        // Check events, 2200 users created.
+        $this->assertCount(2200, $events);
 
         // Add the cohorts.
         $cohort = new stdClass();
@@ -207,21 +227,33 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(3, $members);
 
-        // Add the big cohort.
+        // Add the faculty cohort.
         $cohort = new stdClass();
         $cohort->contextid = context_system::instance()->id;
-        $cohort->name = "All employees";
-        $cohort->idnumber = 'allemployees';
-        $allemployeesid = cohort_add_cohort($cohort);
+        $cohort->name = "All faculty";
+        $cohort->idnumber = 'allfaculty';
+        $allfacultyid = cohort_add_cohort($cohort);
 
-        // The big cohort should have 2000 members.
+        // The faculty cohort should have 200 members.
         $plugin->sync_cohorts_by_group();
-        $members = $DB->count_records('cohort_members', array('cohortid' => $allemployeesid));
-        $this->assertEquals(2000, $members);
+        $members = $DB->count_records('cohort_members', array('cohortid' => $allfacultyid));
+        $this->assertEquals(200, $members);
+
+        // Add the student cohort.
+        $cohort = new stdClass();
+        $cohort->contextid = context_system::instance()->id;
+        $cohort->name = "All students";
+        $cohort->idnumber = 'allstudents';
+        $allstudentsid = cohort_add_cohort($cohort);
+
+        // The student cohort should be empty.
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $allstudentsid));
+        $this->assertEquals(0, $members);
 
         // Add a user to a group in LDAP and ensure he'd added.
         ldap_mod_add($connection, "cn=history,ou=groups,$topdn",
-            array($auth->config->memberattribute => "cn=username3,ou=users,$topdn"));
+            array($auth->config->memberattribute => "cn=username3,ou=faculty,$topdn"));
         $members = $DB->count_records('cohort_members', array('cohortid' => $historyid));
         $this->assertEquals(3, $members);
         $plugin->sync_cohorts_by_group();
@@ -230,12 +262,22 @@ class local_ldap_sync_testcase extends advanced_testcase {
 
         // Remove a user from a group in LDAP and ensure he's deleted.
         ldap_mod_del($connection, "cn=english,ou=groups,$topdn",
-            array($auth->config->memberattribute => "cn=username2,ou=users,$topdn"));
+            array($auth->config->memberattribute => "cn=username2,ou=faculty,$topdn"));
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(3, $members);
         $plugin->sync_cohorts_by_group();
         $members = $DB->count_records('cohort_members', array('cohortid' => $englishid));
         $this->assertEquals(2, $members);
+
+        // Add the students to the group sync.
+        set_config('group_contexts', implode(";", array('ou=groups,'.$topdn, 'ou=faculty,'.$topdn, 'ou=students,'.$topdn)));
+        $plugin = null;
+        $plugin = new local_ldap();
+
+        // The student cohort should have 2000 members.
+        $plugin->sync_cohorts_by_group();
+        $members = $DB->count_records('cohort_members', array('cohortid' => $allstudentsid));
+        $this->assertEquals(2000, $members);
 
         // Cleanup.
         $this->recursive_delete(TEST_AUTH_LDAP_DOMAIN, $testcontainer);
@@ -278,7 +320,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $o['ou']          = 'users';
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
         for ($i = 1; $i <= 2000; $i++) {
-            $this->create_ldap_user($connection, $topdn, $i);
+            $this->create_ldap_user($connection, $o['ou'], $topdn, $i);
             ldap_mod_add($connection, "cn=username$i,ou=users,$topdn",
                 array('objectClass' => 'eduPerson'));
         }
@@ -458,10 +500,11 @@ class local_ldap_sync_testcase extends advanced_testcase {
      * environment caused all manner of problems; forking was more straightforward.
      *
      * @param resource $connection the LDAP connection
+     * @param string $ou the organizational unit
      * @param string $topdn the top-level container
      * @param integer $i incremented number for user uniqueness constraint
      */
-    protected function create_ldap_user($connection, $topdn, $i) {
+    protected function create_ldap_user($connection, $ou, $topdn, $i) {
         $o = array();
         $o['objectClass']   = array('inetOrgPerson', 'organizationalPerson', 'person', 'posixAccount');
         $o['cn']            = 'username'.$i;
@@ -473,7 +516,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $o['homeDirectory'] = '/';
         $o['mail']          = 'user'.$i.'@example.com';
         $o['userPassword']  = 'pass'.$i;
-        ldap_add($connection, 'cn='.$o['cn'].',ou=users,'.$topdn, $o);
+        ldap_add($connection, 'cn='.$o['cn'].',ou='.$ou.','.$topdn, $o);
     }
 
     /**
@@ -483,11 +526,12 @@ class local_ldap_sync_testcase extends advanced_testcase {
      * environment caused all manner of problems; forking was more straightforward.
      *
      * @param resource $connection the LDAP connection
+     * @param string $ou the organizational unit
      * @param string $topdn the top-level container
      * @param integer $i incremented number for user uniqueness constraint
      */
-    protected function delete_ldap_user($connection, $topdn, $i) {
-        ldap_delete($connection, 'cn=username'.$i.',ou=users,'.$topdn);
+    protected function delete_ldap_user($connection, $ou, $topdn, $i) {
+        ldap_delete($connection, 'cn=username'.$i.',ou='.$ou.','.$topdn);
     }
 
     /**

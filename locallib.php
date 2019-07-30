@@ -102,7 +102,8 @@ class local_ldap extends auth_plugin_ldap {
     }
 
     /**
-     * Get the context for group synchronization.
+     * Get the context for group synchronization. This will override the configuration
+     * in auth_ldap.
      *
      * @return array
      */
