@@ -47,6 +47,8 @@ class local_ldap extends auth_plugin_ldap {
      * Constructor.
      */
     public function __construct() {
+        global $CFG;
+
         // Revision March 2013 needed to fetch the proper LDAP parameters
         // host, context ... from table config_plugins see comments in https://tracker.moodle.org/browse/MDL-25011.
         if (is_enabled_auth('cas')) {
@@ -91,6 +93,27 @@ class local_ldap extends auth_plugin_ldap {
         // Cache for found groups dn; used for nested groups processing.
         $this->groupdnscache      = array();
         $this->antirecursionarray = array();
+
+        // Check for the old hard-coded config.
+        if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
+            $this->config->group_contexts = $CFG->cohort_synching_ldap_groups_contexts;
+        }
+
+    }
+
+    /**
+     * Get the context for group synchronization.
+     *
+     * @return array
+     */
+    protected function get_group_contexts() {
+        $contexts = array();
+        if (!empty($this->config->group_contexts)) {
+            $contexts = explode(';', $this->config->group_contexts);
+        } else {
+            $contexts = explode(';', $this->config->contexts);
+        }
+        return $contexts;
     }
 
     /**
@@ -123,11 +146,7 @@ class local_ldap extends auth_plugin_ldap {
             $filter = "(&(" . $this->config->group_attribute . "=*)(objectclass=" . $this->config->group_class . "))";
         }
 
-        if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
-            $contexts = explode(';', $CFG->cohort_synching_ldap_groups_contexts);
-        } else {
-            $contexts = explode(';', $this->config->contexts);
-        }
+        $contexts = $this->get_group_contexts();
 
         if (!empty ($this->config->create_context)) {
             array_push($contexts, $this->config->create_context);
@@ -196,11 +215,7 @@ class local_ldap extends auth_plugin_ldap {
 
         $queryg = "(&({$this->config->group_attribute}=" . ldap_filter_addslashes(trim($group)) . ")(objectClass={$this->config->group_class}))";
 
-        if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
-            $contexts = explode(';', $CFG->cohort_synching_ldap_groups_contexts);
-        } else {
-            $contexts = explode(';', $this->config->contexts);
-        }
+        $contexts = $this->get_group_contexts();
 
         if (!empty ($this->config->create_context)) {
             array_push($contexts, $this->config->create_context);
@@ -294,11 +309,7 @@ class local_ldap extends auth_plugin_ldap {
 
         $size = 999;
 
-        if (!empty($CFG->cohort_synching_ldap_groups_contexts)) {
-            $contexts = explode(';', $CFG->cohort_synching_ldap_groups_contexts);
-        } else {
-            $contexts = explode(';', $this->config->contexts);
-        }
+        $contexts = $this->get_group_contexts();
 
         if (!empty ($this->config->create_context)) {
             array_push($contexts, $this->config->create_context);

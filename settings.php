@@ -61,6 +61,12 @@ if ($hassiteconfig) {
     $setting = new admin_setting_configcheckbox('local_ldap/'.$name, $title, $description, false);
     $settings->add($setting);
 
+    $settings->add(
+        new admin_setting_configtext('local_ldap/groups_contexts',
+            get_string('group_contexts', 'local_ldap'), get_string('group_contexts_desc', 'local_ldap'), ''
+        )
+    );
+
     $settings->add(new admin_setting_heading('synccohortattribute',
                     get_string('synccohortattribute', 'local_ldap'),
                     get_string('synccohortattribute_info', 'local_ldap')));
