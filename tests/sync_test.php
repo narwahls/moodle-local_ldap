@@ -150,6 +150,9 @@ class local_ldap_sync_testcase extends advanced_testcase {
         set_config('field_lock_lastname', 'unlocked', 'auth_ldap');
         $this->assertEquals(2, $DB->count_records('user'));
 
+        // Configure the local plugin.
+        set_config('group_contexts', implode(";", array('ou=groups,'.$topdn, 'ou=users,'.$topdn)));
+
         // Sync the users.
         $auth = get_auth_plugin('ldap');
 
