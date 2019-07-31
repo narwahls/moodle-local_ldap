@@ -134,7 +134,8 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $o['cn']          = 'allstudents';
         $o['member']      = array();
         for ($i = 1; $i <= 2000; $i++) {
-            $o['member'][] = "cn=student{$i + 1000},ou=students,{$topdn}";
+            $studentid = $i + 1000;
+            $o['member'][] = "cn=student{$studentid},ou=students,{$topdn}";
         }
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
