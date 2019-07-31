@@ -75,15 +75,6 @@ class local_ldap_sync_testcase extends advanced_testcase {
             $this->markTestSkipped('Can not create test LDAP container.');
         }
 
-        // Create 2000 students.
-        $o = array();
-        $o['objectClass'] = array('organizationalUnit');
-        $o['ou']          = 'students';
-        ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
-        for ($i = 1; $i <= 2000; $i++) {
-            $this->create_ldap_user($connection, $o['ou'], $topdn, $i);
-        }
-
         // Create 200 faculty.
         $o = array();
         $o['objectClass'] = array('organizationalUnit');
@@ -91,6 +82,15 @@ class local_ldap_sync_testcase extends advanced_testcase {
         ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
         for ($i = 1; $i <= 200; $i++) {
             $this->create_ldap_user($connection, $o['ou'], $topdn, $i);
+        }
+
+        // Create 2000 students.
+        $o = array();
+        $o['objectClass'] = array('organizationalUnit');
+        $o['ou']          = 'students';
+        ldap_add($connection, 'ou='.$o['ou'].','.$topdn, $o);
+        for ($i = 1; $i <= 2000; $i++) {
+            $this->create_ldap_user($connection, $o['ou'], $topdn, $i + 1000);
         }
 
         // Create department groups.
@@ -110,7 +110,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
 
         // Create a bunch of empty groups to simulate a large deployment.
         for ($i = 1; $i <= 2000; $i++) {
-            $u = rand(1, 2000);
+            $u = rand(1, 2000) + 1000;
             $o = array();
             $o['objectClass'] = array('groupOfNames');
             $o['cn']          = "emptygroup{$i}";
@@ -134,7 +134,7 @@ class local_ldap_sync_testcase extends advanced_testcase {
         $o['cn']          = 'allstudents';
         $o['member']      = array();
         for ($i = 1; $i <= 2000; $i++) {
-            $o['member'][] = "cn=student{$i},ou=students,{$topdn}";
+            $o['member'][] = "cn=student{$i + 1000},ou=students,{$topdn}";
         }
         ldap_add($connection, 'cn='.$o['cn'].',ou=groups,'.$topdn, $o);
 
