@@ -683,7 +683,7 @@ class local_ldap extends auth_plugin_ldap {
         }
 
         if($this->config->group_filter === '') {
-            $filter = '*';#
+            $filter = '*';
         }
 
         $ldapgroups = $this->ldap_get_grouplist($filter);
