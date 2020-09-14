@@ -678,11 +678,13 @@ class local_ldap extends auth_plugin_ldap {
         global $DB;
 
         $filter = '';
-        if($this->config->group_filter != '' || $this->config->group_filter !== '*')
+        if($this->config->group_filter != '' || $this->config->group_filter !== '*') {
             $filter = $this->config->group_filter;
+        }
 
-        if($this->config->group_filter === '')
-            $filter = '*';
+        if($this->config->group_filter === '') {
+            $filter = '*';#
+        }
 
         $ldapgroups = $this->ldap_get_grouplist($filter);
         foreach ($ldapgroups as $groupname) {
